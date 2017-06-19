@@ -11,6 +11,7 @@ import android.media.MediaPlayer;
 import android.opengl.GLSurfaceView;
 import android.os.Handler;
 import android.os.Message;
+import android.os.SystemClock;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.Surface;
@@ -45,16 +46,21 @@ public class Game extends View {
     private int score = 0;
     private boolean flag = false;
     private long delay = 2000;
+    private int location = -1;
+    private int touchCount = 0;
     public Game(GameActivity activity) {
         super(activity);
         this.manager = (WindowManager) activity.getSystemService(Context.WINDOW_SERVICE);
         this.game = activity;
-        score = 0;
         initParams();
         initBitmap();
     }
 
     private void initParams(){
+        score = 0;
+        isOver = 0;
+        location = -1;
+        touchCount = 0;
         width = manager.getDefaultDisplay().getWidth();
         height = manager.getDefaultDisplay().getHeight();
     }
@@ -80,6 +86,7 @@ public class Game extends View {
     }
 
     public void initBlocks(Canvas canvas,List<Block> blocks){
+        //初始化位置数组
         int[] X = { 0, (width/2) + 1, 0, (width/2) + 1,0, (width/2) + 1};
         int[] Y = { 0, 0, (height/3)+1,(height/3)+1, 2*(height/3)+1,2*(height/3)+1};
 
@@ -93,7 +100,6 @@ public class Game extends View {
         String sc = "分数："+score;
         canvas.drawText(sc,width/2 - width/8,height/3-height/4,paint);
     }
-
     private void newLine(int loc){
         List<Block> kinds = ConstantUtil.getABlock(this,height,width);
         if(loc == 0) {
@@ -128,6 +134,12 @@ public class Game extends View {
     private int notHer(float x, float y){
         int over = -1;
         if(y<height/3 && y>0){
+            if(blocks.get(4).getColor() == 0 || blocks.get(5).getColor() == 0){
+                over = 1;
+            }
+            if(blocks.get(2).getColor() == 0 || blocks.get(3).getColor() == 0){
+                over = 1;
+            }
             //左
             if(x<width/2) {
                 if (blocks.get(0).getColor() == 0) {
@@ -146,6 +158,9 @@ public class Game extends View {
             }
         }
         if(y>height/3 && y<2*(height/3)){
+            if(blocks.get(4).getColor() == 0 || blocks.get(5).getColor() == 0){
+                over = 1;
+            }
             //左
             if(x<width/2) {
                 if (blocks.get(2).getColor() == 0) {
@@ -162,8 +177,10 @@ public class Game extends View {
                     over = 1;
                 }
             }
+            location = 2;
         }
         if(y>2*(height/3)){
+            location = 1;
             //左
             if(x<width/2) {
                 if (blocks.get(4).getColor() == 0) {
@@ -190,11 +207,10 @@ public class Game extends View {
         if (event.getAction()== MotionEvent.ACTION_DOWN) {
             final float x = event.getX();
             final float y = event.getY();
-            final MotionEvent event1 = event;
             isOver = notHer(x, y);
             Log.i("Position---->", "X:" + x + " Y:" + y);
             flag = true;
-
+            touchCount ++;
             Thread thread = new Thread(new Runnable() {
                 @Override
                 public void run() {
@@ -221,8 +237,6 @@ public class Game extends View {
                 case 0:
                     break;
                 case 1:
-                    score = 0;
-                    isOver = 0;
                     initParams();
                     initBitmap();
                     game.setRestart();
